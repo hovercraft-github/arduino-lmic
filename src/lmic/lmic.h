@@ -33,6 +33,10 @@
 #ifndef _lmic_h_
 #define _lmic_h_
 
+#ifdef linux
+#include <Arduino.h>
+#endif
+
 #include "oslmic.h"
 #include "lorabase.h"
 
