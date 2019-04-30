@@ -50,8 +50,7 @@ int main(void)
 	init();
 	setup();
 	for (;;) {
-    if (kbhit())
-      break;
+    //if (kbhit()) break;
 		loop();
 	}
 

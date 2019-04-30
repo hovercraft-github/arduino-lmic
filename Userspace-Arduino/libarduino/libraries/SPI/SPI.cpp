@@ -28,25 +28,30 @@ SPIClass SPI;
 
 SPIClass::SPIClass()
 {
-  ret = 0;
-  fd = -1;
-  device = "/dev/spidev1.0";
-  bitOrder = 0;
-  tr.len = 1;
-  tr.speed_hz = 4000000; // default set to 4 Mhz
-  tr.bits_per_word = 8;
-  tr.cs_change = 0;
-  tr.delay_usecs = 0;
-  tr.pad = 0;
-  tr.rx_nbits = 0;
-  tr.tx_nbits = 0;
+	m_inTransaction = false;
+	ret = 0;
+	fd = -1;
+	device = "/dev/spidev1.0";
+	bitOrder = 0;
+	m_mode32 = 0;
+	tr.len = 1;
+	tr.speed_hz = 1000000L; // default set to 1 Mhz
+	tr.bits_per_word = 8;
+	tr.cs_change = 0;
+	tr.delay_usecs = 1;
+	tr.pad = 0;
+	tr.rx_nbits = 0;
+	tr.tx_nbits = 0;
 }
 
 void SPIClass::beginTransaction(SPISettings settings)
 {
-    setDataMode(settings.m_dataMode);
-    setBitOrder(settings.m_bitOrder);
-    setClockDivider(settings.m_clock);
+	if (!m_inTransaction) {
+	    setDataMode(settings.m_dataMode);
+	    setBitOrder(settings.m_bitOrder);
+	    setClockDivider(settings.m_clock);
+	    m_inTransaction = true;
+	}
 }
 
 void SPIClass::endTransaction(void)
@@ -89,58 +94,34 @@ void SPIClass::begin()
 
 void SPIClass::begin(SPISettings settings)
 {
-    writeMuxFile("/sys/devices/platform/ocp/ocp:P9_17_pinmux/state", "spi_cs");
-    writeMuxFile("/sys/devices/platform/ocp/ocp:P9_18_pinmux/state", "spi");
-    writeMuxFile("/sys/devices/platform/ocp/ocp:P9_21_pinmux/state", "spi");
-    writeMuxFile("/sys/devices/platform/ocp/ocp:P9_22_pinmux/state", "spi_sclk");
-
-    fd = open(device, O_RDWR);
-    if (fd < 0) {
-        perror("Can't open device");
-        abort();
-    }
-
-    /*
-     * bits per word
-     */
-    ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &tr.bits_per_word);
-    if (ret == -1)
-        perror("SPI_IOC_WR_BITS_PER_WORD not set");
-    ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &tr.bits_per_word);
-    if (ret == -1)
-        perror("can't get bits per word");
-    setDataMode(settings.m_dataMode);
-    setBitOrder(settings.m_bitOrder);
-    setClockDivider(settings.m_clock);
+	begin();
+	beginTransaction(settings);
 }
 
 byte SPIClass::transfer(byte txData)
 {
-    byte rxData = 0xFF;
-    tr.tx_buf = (__u64) &txData;
-    tr.rx_buf = (__u64) &rxData;
-    tr.len = sizeof(byte);
-    //tr.cs_change = 0;
-    //tr.delay_usecs = 0xFFFF;
-    ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
-    if (ret < 1)
-        perror("SPI_IOC_MESSAGE not sent");
+	uint8_t buf[1] = { txData };
+	transfer(buf, 1, SPI_TRX_DIR_DUPLEX);
 
-    return rxData;
+    return buf[0];
 }
 
-void SPIClass::transfer(uint8_t *buf, uint32_t len, uint32_t speed,
-                          uint16_t delay, uint8_t bitsPerWord, uint8_t cs_change)
+void SPIClass::transfer(uint8_t *buf, uint32_t len, SPI_TRX_DIR dir)
 {
   struct spi_ioc_transfer transfer[len];
   for (uint32_t i = 0; i < len; i++) {
-    transfer[i].tx_buf = (__u64) (buf + i);
-    transfer[i].rx_buf = (__u64) (buf + i);
-    transfer[i].len = 1; //number of bytes in vector
-    transfer[i].speed_hz = speed;
-    transfer[i].delay_usecs = delay;
-    transfer[i].bits_per_word = bitsPerWord;
-    transfer[i].cs_change = cs_change;
+	if (len > 1) { // expect the first byte is a command
+	    transfer[i].tx_buf = (__u64) ((dir == SPI_TRX_DIR_READ) && (i > 0) ? NULL : (buf + i));
+	    transfer[i].rx_buf = (__u64) ((dir == SPI_TRX_DIR_WRITE) || (i == 0) ? NULL : (buf + i));
+	} else {
+	    transfer[i].tx_buf = (__u64) (buf + i);
+	    transfer[i].rx_buf = (__u64) (buf + i);
+	}
+    transfer[i].len = 1; //number of bytes in this transfer
+    transfer[i].speed_hz = tr.speed_hz;
+    transfer[i].delay_usecs = tr.delay_usecs;
+    transfer[i].bits_per_word = tr.bits_per_word;
+    transfer[i].cs_change = tr.cs_change;
     transfer[i].rx_nbits = 0;
     transfer[i].tx_nbits = 0;
     transfer[i].pad = 0;
@@ -155,36 +136,6 @@ void SPIClass::transfer(uint8_t *buf, uint32_t len, uint32_t speed,
                                errMessage);*/
   }
 }
-
-/*
-void SPIClass::transfer(std::vector<std::vector<uint8_t> > &data, uint32_t speed,
-                          uint16_t delay, uint8_t bitsPerWord, uint8_t cs_change)
-{
-    struct spi_ioc_transfer transfer[data.size()];
-    int i = 0;
-    for (std::vector<uint8_t> &d : data)
-    {
-        //see <linux/spi/spidev.h> for details!
-        transfer[i].tx_buf = reinterpret_cast<__u64>(d.data());
-        transfer[i].rx_buf = reinterpret_cast<__u64>(d.data());
-        transfer[i].len = d.size(); //number of bytes in vector
-        transfer[i].speed_hz = speed;
-        transfer[i].delay_usecs = delay;
-        transfer[i].bits_per_word = bitsPerWord;
-        transfer[i].cs_change = cs_change;
-        i++;
-    }
-    int status = ioctl(fd, SPI_IOC_MESSAGE(data.size()), &transfer);
-    if (status < 0)
-    {
-        perror("SPI_IOC_MESSAGE not sent");
-//        std::string errMessage(strerror(errno));
-//        throw std::runtime_error("Failed to do full duplex read/write operation "
-//                                 "on SPI Bus " + this->deviceNode + ". Error message: " +
-//                                 errMessage);
-    }
-}
-*/
 
 void SPIClass::setBitOrder(uint8_t bOrder)
 {

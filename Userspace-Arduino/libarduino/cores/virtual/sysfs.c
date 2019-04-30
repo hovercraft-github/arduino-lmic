@@ -29,6 +29,8 @@
 #include <time.h>
 #include <wiring.h>
 
+#define _BSD_SOURCE
+
 int sysfs_read(const char *path, const char *filename, char *value)
 {
 	FILE *fd;

@@ -34,6 +34,7 @@
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
+#include "arduino_lmic_hal_configuration.h"
 
 #define PROGMEM
 #define memcpy_P memcpy
@@ -70,11 +71,61 @@ static osjob_t sendjob;
 const unsigned TX_INTERVAL = 60;
 
 // Pin mapping
+/*
 const lmic_pinmap lmic_pins = {
     .nss = 6,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = 5,
     .dio = {2, 3, 4},
+};
+*/
+
+namespace Arduino_LMIC {
+
+class HalConfiguration_BBB_t : public HalConfiguration_t
+	{
+public:
+	enum DIGITAL_PINS : uint8_t
+		{
+		PIN_SX1276_NSS = HalPinmap_t::UNUSED_PIN,
+		PIN_SX1276_NRESET = 1,
+		PIN_SX1276_DIO0 = 5,
+		PIN_SX1276_DIO1 = 2,
+		PIN_SX1276_DIO2 = 3,
+		PIN_SX1276_ANT_SWITCH_RX = HalPinmap_t::UNUSED_PIN,
+		PIN_SX1276_ANT_SWITCH_TX_BOOST = HalPinmap_t::UNUSED_PIN,
+		PIN_SX1276_ANT_SWITCH_TX_RFO = HalPinmap_t::UNUSED_PIN,
+		PIN_VDD_BOOST_ENABLE = HalPinmap_t::UNUSED_PIN,
+		};
+
+	/*
+	virtual void begin(void) override
+		{
+		digitalWrite(PIN_SX1276_NSS, 1);
+		pinMode(PIN_SX1276_NSS, OUTPUT);
+		}
+	*/
+
+	// virtual void end(void) override
+
+	// virtual ostime_t setModuleActive(bool state) override
+
+	};
+}
+
+static Arduino_LMIC::HalConfiguration_BBB_t myConfig;
+
+const lmic_pinmap lmic_pins = {
+    .nss = Arduino_LMIC::HalConfiguration_BBB_t::PIN_SX1276_NSS, //LMIC_UNUSED_PIN,
+    .rxtx = Arduino_LMIC::HalConfiguration_BBB_t::PIN_SX1276_ANT_SWITCH_RX,
+    .rst = Arduino_LMIC::HalConfiguration_BBB_t::PIN_SX1276_NRESET,
+    .dio = {Arduino_LMIC::HalConfiguration_BBB_t::PIN_SX1276_DIO0,
+    		Arduino_LMIC::HalConfiguration_BBB_t::PIN_SX1276_DIO1,
+			Arduino_LMIC::HalConfiguration_BBB_t::PIN_SX1276_DIO2},
+    .rxtx_rx_active = 0,
+    .rssi_cal = 8,
+	.spi_freq = 100000L,
+    .pConfig = &myConfig,
 };
 
 void onEvent (ev_t ev) {
@@ -109,12 +160,12 @@ void onEvent (ev_t ev) {
               Serial.print("devaddr: ");
               Serial.println(devaddr, HEX);
               Serial.print("artKey: ");
-              for (int i=0; i<sizeof(artKey); ++i) {
+              for (size_t i=0; i<sizeof(artKey); ++i) {
                 Serial.print(artKey[i], HEX);
               }
               Serial.println("");
               Serial.print("nwkKey: ");
-              for (int i=0; i<sizeof(nwkKey); ++i) {
+              for (size_t i=0; i<sizeof(nwkKey); ++i) {
                 Serial.print(nwkKey[i], HEX);
               }
               Serial.println("");

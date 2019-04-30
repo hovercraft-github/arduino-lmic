@@ -51,6 +51,7 @@ struct HalPinmap_t {
 	static constexpr uint8_t LMIC_UNUSED_PIN = UNUSED_PIN;
 
 	/* the contents */
+	//uint32_t spi_freq;	// bytes 8..11: SPI freq in Hz.
 	uint8_t nss;		// byte 0: pin for select
 	uint8_t rxtx;		// byte 1: pin for rx/tx control
 	uint8_t rst;		// byte 2: pin for reset
@@ -70,6 +71,7 @@ class HalConfiguration_t
 	{
 public:
 	HalConfiguration_t() {};
+	virtual ~HalConfiguration_t() {}
 
 	virtual ostime_t setModuleActive(bool state) {
 		LMIC_API_PARAMETER(state);

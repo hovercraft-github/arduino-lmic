@@ -1,0 +1,62 @@
+Packet queued
+
+7583: EV_JOINING
+
+211940: EV_TXSTART
+
+605089: Unknown event: 20
+
+4389457: EV_TXSTART
+
+4782604: Unknown event: 20
+
+8683890: EV_TXSTART
+
+9077055: Unknown event: 20
+
+13488332: EV_TXSTART
+
+13814720: EV_JOINED
+
+netid: 10855845
+
+devaddr: F8B4B5A5
+
+artKey: 5BAB24F5D4049582586B23E85268C
+
+nwkKey: C43B11A928CD6F51F41F12D332DE8ED
+
+13814985: EV_TXSTART
+
+13891338: EV_TXCOMPLETE (includes waiting for RX windows)
+
+17641464: EV_TXSTART
+
+Packet queued
+
+18049585: EV_TXCOMPLETE (includes waiting for RX windows)
+
+21799706: EV_TXSTART
+
+Packet queued
+
+22133194: EV_TXCOMPLETE (includes waiting for RX windows)
+
+25883307: EV_TXSTART
+
+Packet queued
+
+26286650: EV_TXCOMPLETE (includes waiting for RX windows)
+
+30036772: EV_TXSTART
+
+Packet queued
+
+30466778: EV_TXCOMPLETE (includes waiting for RX windows)
+
+34216883: EV_TXSTART
+
+Packet queued
+
+34548717: EV_TXCOMPLETE (includes waiting for RX windows)
+

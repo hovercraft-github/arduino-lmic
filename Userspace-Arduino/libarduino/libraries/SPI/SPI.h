@@ -51,6 +51,11 @@ private:
   friend class SPIClass;
 };
 
+typedef enum _SPI_TRX_DIR {
+	SPI_TRX_DIR_READ = 0,
+	SPI_TRX_DIR_WRITE,
+	SPI_TRX_DIR_DUPLEX
+} SPI_TRX_DIR;
 
 class SPIClass {
 		int ret;
@@ -59,24 +64,24 @@ class SPIClass {
 		int bitOrder;
 		struct spi_ioc_transfer tr;
 		uint32_t m_mode32;
+		bool m_inTransaction;
 public:
 		SPIClass();
-		byte transfer(byte _data);
 		void begin();
 		void begin(SPISettings settings);
 		void end();
 		void setBitOrder(uint8_t);
 		void setDataMode(uint8_t);
 		void setClockDivider(uint32_t);
-    void beginTransaction(SPISettings settings);
-    void endTransaction(void);
-    /*void transfer(std::vector<std::vector<uint8_t> > &data,
-                  uint32_t speed,
-                  uint16_t delay,
-                  uint8_t  bitsPerWord,
-                  uint8_t cs_change);*/
-    void transfer(uint8_t *buf, uint32_t len, uint32_t speed,
-                          uint16_t delay, uint8_t bitsPerWord, uint8_t cs_change);
+		void beginTransaction(SPISettings settings);
+		void endTransaction(void);
+		byte transfer(byte _data);
+		/***
+		 * Unfortunatelly, linux SPI driver put the NSS line into high impedance state
+		 * immediately after transfer completes. This makes the single byte transfer
+		 * useless for sending multibyte commands, unless we handle NSS manually.
+		 */
+		void transfer(uint8_t *buf, uint32_t len, SPI_TRX_DIR dir);
 
 };
 extern SPIClass SPI;

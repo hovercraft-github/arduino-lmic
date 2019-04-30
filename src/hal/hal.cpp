@@ -18,6 +18,8 @@
 #include "hal.h"
 // we may need some things from stdio.
 #include <stdio.h>
+#include <unistd.h>
+#include <time.h>
 
 // -----------------------------------------------------------------------------
 // I/O
@@ -30,8 +32,10 @@ static hal_failure_handler_t* custom_hal_failure_handler = NULL;
 static void hal_interrupt_init(); // Fwd declaration
 
 static void hal_io_init () {
+#ifndef __linux__
     // NSS and DIO0 are required, DIO1 is required for LoRa, DIO2 for FSK
     ASSERT(plmic_pins->nss != LMIC_UNUSED_PIN);
+#endif
     ASSERT(plmic_pins->dio[0] != LMIC_UNUSED_PIN);
     ASSERT(plmic_pins->dio[1] != LMIC_UNUSED_PIN || plmic_pins->dio[2] != LMIC_UNUSED_PIN);
 
@@ -41,9 +45,11 @@ static void hal_io_init () {
 //    Serial.print("dio[1]: "); Serial.println(plmic_pins->dio[1]);
 //    Serial.print("dio[2]: "); Serial.println(plmic_pins->dio[2]);
 
-    // initialize SPI chip select to high (it's active low)
-    digitalWrite(plmic_pins->nss, HIGH);
-    pinMode(plmic_pins->nss, OUTPUT);
+    if (plmic_pins->nss != LMIC_UNUSED_PIN) {
+        // initialize SPI chip select to high (it's active low)
+        digitalWrite(plmic_pins->nss, HIGH);
+        pinMode(plmic_pins->nss, OUTPUT);
+    }
 
     if (plmic_pins->rxtx != LMIC_UNUSED_PIN) {
         // initialize to RX
@@ -53,6 +59,7 @@ static void hal_io_init () {
     if (plmic_pins->rst != LMIC_UNUSED_PIN) {
         // initialize RST to floating
         pinMode(plmic_pins->rst, INPUT);
+        digitalWrite(plmic_pins->rst, HIGH);
     }
 
     hal_interrupt_init();
@@ -166,8 +173,10 @@ static void hal_spi_trx(u1_t cmd, u1_t* buf, size_t len, bit_t is_read) {
 
     SPISettings settings(spi_freq, MSBFIRST, SPI_MODE0);
     SPI.beginTransaction(settings);
-    digitalWrite(nss, 0);
+    if (nss != LMIC_UNUSED_PIN) // On Linux an automatic NSS pin handling by the SPI driver is possible
+    	digitalWrite(nss, 0);
 
+#ifndef __linux__
     SPI.transfer(cmd);
 
     for (; len > 0; --len, ++buf) {
@@ -176,8 +185,23 @@ static void hal_spi_trx(u1_t cmd, u1_t* buf, size_t len, bit_t is_read) {
         if (is_read)
             *buf = data;
     }
+#else
+    u1_t trx_buff[len+1] = { cmd, };
+    if (!is_read) {
+        for (size_t i = 0; i < len; i++) {
+        	trx_buff[i+1] = buf[i];
+        }
+    }
+    SPI.transfer(trx_buff, len+1, is_read ? SPI_TRX_DIR_READ : SPI_TRX_DIR_WRITE);
+    if (is_read) {
+        for (size_t i = 0; i < len; i++) {
+        	buf[i] = trx_buff[i+1];
+        }
+    }
+#endif
 
-    digitalWrite(nss, 1);
+    if (nss != LMIC_UNUSED_PIN)
+    	digitalWrite(nss, 1);
     SPI.endTransaction();
 }
 
