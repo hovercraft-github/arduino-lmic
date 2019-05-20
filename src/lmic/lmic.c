@@ -758,7 +758,7 @@ scan_mac_cmds(
             u1_t p1     = opts[oidx+1];            // txpow + DR
             u2_t chmap  = os_rlsbf2(&opts[oidx+2]);// list of enabled channels
             u1_t chpage = opts[oidx+4] & MCMD_LADR_CHPAGE_MASK;     // channel page
-            u1_t uprpt  = opts[oidx+4] & MCMD_LADR_REPEAT_MASK;     // up repeat count
+            //u1_t uprpt  = opts[oidx+4] & MCMD_LADR_REPEAT_MASK;     // up repeat count
 
             // TODO(tmm@mcci.com): LoRaWAN 1.1 & 1.0.3 requires us to send one ack
             // for each LinkADRReq in a given MAC message. This code only sends

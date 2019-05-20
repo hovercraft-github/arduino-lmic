@@ -40,6 +40,8 @@
 #define memcpy_P memcpy
 #define F(xxx) xxx
 
+#define BIPPER 26
+
 void do_send(osjob_t* j);
 
 // This EUI must be in little-endian format, so least-significant-byte
@@ -145,10 +147,16 @@ void onEvent (ev_t ev) {
             Serial.println(F("EV_BEACON_TRACKED"));
             break;
         case EV_JOINING:
+            digitalWrite(BIPPER, 1);
             Serial.println(F("EV_JOINING"));
+            break;
+        case EV_JOIN_TXCOMPLETE:
+            Serial.println(F("EV_JOIN_TXCOMPLETE"));
+            digitalWrite(BIPPER, 0);
             break;
         case EV_JOINED:
             Serial.println(F("EV_JOINED"));
+            digitalWrite(BIPPER, 1);
             {
               u4_t netid = 0;
               devaddr_t devaddr = 0;
@@ -193,6 +201,7 @@ void onEvent (ev_t ev) {
             break;
         case EV_TXCOMPLETE:
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
+            digitalWrite(BIPPER, 0);
             if (LMIC.txrxFlags & TXRX_ACK)
               Serial.println(F("Received ack"));
             if (LMIC.dataLen) {
@@ -228,6 +237,7 @@ void onEvent (ev_t ev) {
         ||    break;
         */
         case EV_TXSTART:
+            digitalWrite(BIPPER, 0);
             Serial.println(F("EV_TXSTART"));
             break;
         default:
@@ -259,6 +269,9 @@ void setup() {
     digitalWrite(VCC_ENABLE, HIGH);
     delay(1000);
     #endif
+
+    pinMode(BIPPER, OUTPUT);
+    digitalWrite(BIPPER, 0);
 
     // LMIC init
     os_init();

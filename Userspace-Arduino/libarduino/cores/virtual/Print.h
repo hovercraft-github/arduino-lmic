@@ -37,6 +37,7 @@ class Print
     void printNumber(unsigned long, uint8_t);
     void printFloat(double, uint8_t);
   public:
+    virtual ~Print() {}
     virtual size_t write(uint8_t) = 0;
     virtual void write(const char *str);
     virtual size_t write(const uint8_t *buffer, size_t size);

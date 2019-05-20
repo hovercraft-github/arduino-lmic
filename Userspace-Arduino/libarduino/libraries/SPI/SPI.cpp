@@ -58,7 +58,7 @@ void SPIClass::endTransaction(void)
 {
 }
 
-void writeMuxFile(char *fileName, char *value) 
+void writeMuxFile(const char *fileName, const char *value)
 {
   //FILE *outfile = fopen(fileName, "w");
   int outfile = open(fileName, O_SYNC | O_WRONLY);

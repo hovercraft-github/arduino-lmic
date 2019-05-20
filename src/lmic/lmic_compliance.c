@@ -612,6 +612,7 @@ fsmDispatch(
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
             }
+            break;
         }
 
         default: {
