@@ -1,6 +1,7 @@
 /*
 * Copyright (c) 2014-2016 IBM Corporation.
 * Copyright (c) 2017, 2019 MCCI Corporation.
+* Copyright (c) 2019 hovercraft-github (https://github.com/hovercraft-github).
 * All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -63,11 +64,12 @@ uint8_t LMICru864_maxFrameLen(uint8_t dr) {
 }
 
 static CONST_TABLE(s1_t, TXPOWLEVELS)[] = {
-        16, 14, 12, 10, 8, 6, 4, 2, 0,0,0,0, 0,0,0,0
+        //16, 14, 12, 10, 8, 6, 4, 2, 0,0,0,0, 0,0,0,0
+        14, 14, 12, 10, 8, 6, 4, 2, 0,0,0,0, 0,0,0,0
 };
 
 int8_t LMICru864_pow2dBm(uint8_t mcmd_ladr_p1) {
-        return TABLE_GET_S1(TXPOWLEVELS, (mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT);
+        return TABLE_GET_S1(TXPOWLEVELS, (mcmd_ladr_p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT);
 }
 
 // only used in this module, but used by variant macro dr2hsym().
@@ -92,7 +94,7 @@ static CONST_TABLE(u4_t, iniChannelFreq)[NUM_DEFAULT_CHANNELS*2] = {
         // Join frequencies and duty cycle limit (0.1%)
         RU864_J1 | BAND_MILLI, RU864_J2 | BAND_MILLI,
         // Default operational frequencies and duty cycle limit (10%)
-        RU864_F1 | BAND_DECI, RU864_F1 | BAND_DECI,
+        RU864_F1 | BAND_DECI, RU864_F2 | BAND_DECI,
 };
 
 void LMICru864_initDefaultChannels(bit_t join) {
@@ -111,15 +113,19 @@ void LMICru864_initDefaultChannels(bit_t join) {
         LMIC.bands[BAND_MILLI].txcap = 1000;  // 0.1%
         LMIC.bands[BAND_MILLI].txpow = 14;
         LMIC.bands[BAND_MILLI].lastchnl = os_getRndU1() % MAX_CHANNELS;
+
         LMIC.bands[BAND_CENTI].txcap = 100;   // 1%
         LMIC.bands[BAND_CENTI].txpow = 14;
         LMIC.bands[BAND_CENTI].lastchnl = os_getRndU1() % MAX_CHANNELS;
+
         LMIC.bands[BAND_DECI].txcap = 10;    // 10%
-        LMIC.bands[BAND_DECI].txpow = 27;
+        LMIC.bands[BAND_DECI].txpow = 14;    // local regulation allows up to 20, LoRaWAN 1.1 Regional Parameters expects 16
         LMIC.bands[BAND_DECI].lastchnl = os_getRndU1() % MAX_CHANNELS;
-        LMIC.bands[BAND_MILLI].avail =
-                LMIC.bands[BAND_CENTI].avail =
-                LMIC.bands[BAND_DECI].avail = os_getTime();
+
+        ostime_t avail = os_getTime();
+        LMIC.bands[BAND_MILLI].avail = avail;
+        LMIC.bands[BAND_CENTI].avail = avail;
+        LMIC.bands[BAND_DECI].avail = avail;
 }
 
 bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
@@ -136,21 +142,24 @@ bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
 bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
         if (chidx >= MAX_CHANNELS)
                 return 0;
+        // See local regulation rules here: http://docs.cntd.ru/document/551218943
+        // here: http://docs.cntd.ru/document/902048009
+        //	and there: https://digital.gov.ru/uploaded/files/prilozhenie-12-k-reshenyu-gkrch-18-46-03-1.pdf
         if (band == -1) {
-                if (freq >= 869400000 && freq <= 869650000)
-                        freq |= BAND_DECI;   // 10% 27dBm
-                else if ((freq >= 868000000 && freq <= 868600000) ||
-                        (freq >= 869700000 && freq <= 870000000))
+                if (freq >= RU864_FREQ_B3B && freq <= RU864_FREQ_B3T)
+                        freq |= BAND_DECI;   // 10% 20dBm
+                else if (freq >= RU864_FREQ_B2B && freq <= RU864_FREQ_B2T)
                         freq |= BAND_CENTI;  // 1% 14dBm
-                else
+                else // i.e. if (freq >= RU864_FREQ_B1B && freq <= RU864_FREQ_B1T)
                         freq |= BAND_MILLI;  // 0.1% 14dBm
         }
         else {
-                if (band > BAND_AUX) return 0;
-                freq = (freq&~3) | band;
+                if (band > BAND_AUX)
+                	return 0;
+                freq = (freq &~ 3) | band;
         }
         LMIC.channelFreq[chidx] = freq;
-        // TODO(tmm@mcci.com): don't use US SF directly, use something from the LMIC context or a static const
+        // TODO(tmm@mcci.com): don't use regional SF directly, use something from the LMIC context or a static const
         LMIC.channelDrMap[chidx] = drmap == 0 ? DR_RANGE_MAP(RU864_DR_SF12, RU864_DR_SF7) : drmap;
         LMIC.channelMap |= 1 << chidx;  // enabled right away
         return 1;
@@ -160,12 +169,15 @@ bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
 
 u4_t LMICru864_convFreq(xref2cu1_t ptr) {
         u4_t freq = (os_rlsbf4(ptr - 1) >> 8) * 100;
-        if (freq < RU864_FREQ_MIN || freq > RU864_FREQ_MAX)
-                freq = 0;
-        return freq;
+        if ((freq >= RU864_FREQ_B1B && freq <= RU864_FREQ_B1T)
+        		|| (freq >= RU864_FREQ_B2B && freq <= RU864_FREQ_B2T)
+				|| (freq >= RU864_FREQ_B3B && freq <= RU864_FREQ_B3T))
+        	return freq;
+        return 0;
 }
 
 ostime_t LMICru864_nextJoinTime(ostime_t time) {
+		// time passed should be a current time
         // is the avail time in the future?
         if ((s4_t) (time - LMIC.bands[BAND_MILLI].avail) < 0)
                 // yes: then wait until then.
@@ -179,15 +191,16 @@ ostime_t LMICru864_nextTx(ostime_t now) {
         do {
                 ostime_t mintime = now + /*8h*/sec2osticks(28800);
                 u1_t band = 0;
-                for (u1_t bi = 0; bi<4; bi++) {
-                        if ((bmap & (1 << bi)) && mintime - LMIC.bands[bi].avail > 0)
+                // Find the first scheduled band/time, leave 0/now+8h if none scheduled within next 8h.
+                for (u1_t bi = 0; bi < 4; bi++) {
+                        if ((bmap & (1 << bi)) && (mintime - LMIC.bands[bi].avail > 0))
                                 mintime = LMIC.bands[band = bi].avail;
                 }
                 // Find next channel in given band
                 u1_t chnl = LMIC.bands[band].lastchnl;
-                for (u1_t ci = 0; ci<MAX_CHANNELS; ci++) {
-                        if ((chnl = (chnl + 1)) >= MAX_CHANNELS)
-                                chnl -= MAX_CHANNELS;
+                for (u1_t ci = 0; ci < MAX_CHANNELS; ci++) {
+                        if (++chnl >= MAX_CHANNELS)
+                                chnl = 0;
                         if ((LMIC.channelMap & (1 << chnl)) != 0 &&  // channel enabled
                                 (LMIC.channelDrMap[chnl] & (1 << (LMIC.datarate & 0xF))) != 0 &&
                                 band == (LMIC.channelFreq[chnl] & 0x3)) { // in selected band
