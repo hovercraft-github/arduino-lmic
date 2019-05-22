@@ -130,6 +130,16 @@ const lmic_pinmap lmic_pins = {
     .pConfig = &myConfig,
 };
 
+// prints 8-bit array data in hex with leading zeroes
+void PrintArrayHex(uint8_t *data, uint8_t length)
+{
+        char tmp[16];
+        for (int i=0; i<length; i++) {
+                sprintf(tmp, "%.2X",data[i]);
+                Serial.print(tmp);
+        }
+}
+
 void onEvent (ev_t ev) {
     Serial.print(os_getTime());
     Serial.print(": ");
@@ -168,14 +178,16 @@ void onEvent (ev_t ev) {
               Serial.print("devaddr: ");
               Serial.println(devaddr, HEX);
               Serial.print("artKey: ");
-              for (size_t i=0; i<sizeof(artKey); ++i) {
+              PrintArrayHex(artKey, sizeof(artKey));
+              /*for (size_t i=0; i<sizeof(artKey); ++i) {
                 Serial.print(artKey[i], HEX);
-              }
+              }*/
               Serial.println("");
               Serial.print("nwkKey: ");
-              for (size_t i=0; i<sizeof(nwkKey); ++i) {
+              PrintArrayHex(nwkKey, sizeof(nwkKey));
+              /*for (size_t i=0; i<sizeof(nwkKey); ++i) {
                 Serial.print(nwkKey[i], HEX);
-              }
+              }*/
               Serial.println("");
             }
             // Disable link check validation (automatically enabled

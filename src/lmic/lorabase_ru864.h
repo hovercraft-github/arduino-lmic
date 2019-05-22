@@ -60,7 +60,7 @@ enum _dr_ru864_t {
 //  g2 : 0.1%  14dBm
 //  g3 :  10%  20dBm
 //
-enum { // Corresponds to https://www.smartiko.ru/about/chastotnyy-plan/
+/*enum { // Corresponds to https://www.smartiko.ru/about/chastotnyy-plan/
         RU864_F1 = 868900000,      	//  g2	SF7-12 (DR0-5)
         RU864_J1 = RU864_F1,		//  g3	used for join, ping
         RU864_F2 = 869100000,      	//  g2	SF7-12 (DR0-5)
@@ -72,6 +72,19 @@ enum { // Corresponds to https://www.smartiko.ru/about/chastotnyy-plan/
         RU864_F7 = 864900000,      	//  g2	SF7-12 (DR0-5)
         //RU864_F8 = 864600000,      	//  g2	SF7B / 250 kHz
         //RU864_FSK = 864800000,        //  g2	FSK 250 kHz, 50kbps
+};*/
+enum { // Corresponds to Vega/ttn plan
+        RU864_F1 = 864100000,           //  g2  SF7-12 (DR0-5)
+        RU864_F2 = 864300000,           //  g2  SF7-12 (DR0-5)
+        RU864_F3 = 864500000,           //  g2  SF7-12 (DR0-5)
+        RU864_F4 = 864700000,           //  g2  SF7-12 (DR0-5)
+        RU864_F5 = 864900000,           //  g2  SF7-12 (DR0-5)
+        RU864_F6 = 869100000,           //  g2  SF7-12 (DR0-5)
+        RU864_J1 = RU864_F6,            //  g3  used for join, beacon, RX2
+        RU864_F7 = 868900000,           //  g2  SF7-12 (DR0-5)
+        RU864_J2 = RU864_F7,            //  g3  used for join, ping
+        //RU864_F8 = 864600000,         //  g2  SF7B / 250 kHz
+        //RU864_FSK = 864800000,        //  g2  FSK 250 kHz, 50kbps
 };
 enum {
         RU864_FREQ_B1B = 864000000,
