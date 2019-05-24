@@ -160,8 +160,6 @@ extern "C"{
 
 #define ANALOG_PIN (0xffff)
 
-void load_cape(const char *capename);
-
 #ifdef __cplusplus
 }
 #endif

@@ -94,7 +94,7 @@ static CONST_TABLE(u4_t, iniChannelFreq)[NUM_DEFAULT_CHANNELS*2] = {
         // Join frequencies and duty cycle limit (0.1%)
         RU864_J1 | BAND_MILLI, RU864_J2 | BAND_MILLI,
         // Default operational frequencies and duty cycle limit (10%)
-        RU864_F1 | BAND_DECI, RU864_F2 | BAND_DECI,
+        RU864_J1 | BAND_DECI, RU864_J2 | BAND_DECI,
 };
 
 void LMICru864_initDefaultChannels(bit_t join) {
@@ -119,7 +119,7 @@ void LMICru864_initDefaultChannels(bit_t join) {
         LMIC.bands[BAND_CENTI].lastchnl = os_getRndU1() % MAX_CHANNELS;
 
         LMIC.bands[BAND_DECI].txcap = 10;    // 10%
-        LMIC.bands[BAND_DECI].txpow = 14;    // local regulation allows up to 20, LoRaWAN 1.1 Regional Parameters expects 16
+        LMIC.bands[BAND_DECI].txpow = 16;    // local regulation allows up to 20, LoRaWAN 1.1 Regional Parameters expects 16
         LMIC.bands[BAND_DECI].lastchnl = os_getRndU1() % MAX_CHANNELS;
 
         ostime_t avail = os_getTime();
