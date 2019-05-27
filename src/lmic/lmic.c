@@ -1201,10 +1201,10 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
 
     // Center the receive window on the center of the expected preamble
     // (again note that hsym is half a sumbol time, so no /2 needed)
-    //This is a mistake, about preamble: LMIC.rxtime = LMIC.txend + delay + PAMBL_SYMS * hsym - LMIC.rxsyms * hsym;
-    LMIC.rxtime = LMIC.txend + delay;
+    LMIC.rxtime = LMIC.txend + delay + PAMBL_SYMS * hsym - LMIC.rxsyms * hsym;
+    /*LMIC.rxtime = LMIC.txend + delay;
     if (LMIC.rxsyms != MINRX_SYMS)
-        LMIC.rxtime -= (LMIC.rxsyms + PAMBL_SYMS) * hsym;
+        LMIC.rxtime -= (LMIC.rxsyms + PAMBL_SYMS) * hsym;*/
 
     LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": sched Rx12 %"LMIC_PRId_ostime_t"\n", os_getTime(), LMIC.rxtime - RX_RAMPUP);
     os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);

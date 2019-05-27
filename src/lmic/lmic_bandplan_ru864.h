@@ -37,6 +37,8 @@
 #include "oslmic.h"
 #include "lorabase.h"
 
+#define MINRX_SYMS 51
+
 uint8_t LMICru864_maxFrameLen(uint8_t dr);
 #define maxFrameLen(dr) LMICru864_maxFrameLen(dr)
 

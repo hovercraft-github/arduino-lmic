@@ -35,6 +35,9 @@ unsigned long millis()
 unsigned long micros()
 {
 	struct timespec gettime_now;
+	gettime_now.tv_sec = 0;
+	gettime_now.tv_nsec = 8000;
+	clock_nanosleep(CLOCK_MONOTONIC, 0, &gettime_now, NULL);
 	clock_gettime(CLOCK_MONOTONIC, &gettime_now);
 	return ((gettime_now.tv_sec - prog_start_time.tv_sec)*1000000 +
 			(gettime_now.tv_nsec - prog_start_time.tv_nsec)/1000);
